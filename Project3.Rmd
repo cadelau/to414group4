@@ -11,13 +11,36 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
-mushroomdata <- read.csv("agaricus-lepiota.csv", header = FALSE)
+investments <- read.csv("investments_VC.csv")
+str(investments)
+summary(investments)
 
-str(mushroomdata)
+investments$funding_total_usd <- as.numeric(investments$funding_total_usd)
+investments$permalink <- NULL
+investments$name <- NULL
+investments$homepage_url <- NULL
 
-#rename columns
-colnames(mushroomdata) = c("classification","capshape","capsurface","capcolor","bruises", "odor", "gillattachment", "gillspacing","gillsize","gillcolor","stalkshape","stalkroot","stalksurfaceabove","stalksurfacebelow","stalkcolorabove","stalkcolorbelow","veiltype","veilcolor","ringnumber","ringtype","sporeprintcolor","population","habitat")
+#probably valuable though, but factors with lots of levels right now, so would end up with a lot of model matrix columns?
+investments$market <- NULL 
+investments$country_code <- NULL
+investments$state_code <- NULL
+investments$region <- NULL
+investments$city <- NULL
 
-str(mushroomdata)
-summary(mushroomdata)
+#first funding at and last funding at should be interpreted as dates
+
+#need binary decision for logistic regression?
+investments$status_operating <- ifelse(investments$status == "operating",1,0)
+
+investments_new <- investments
+investments_new$status <- NULL
+
+str(investments_new)
+#normalize necessary columns, probably after model matrix
+normalize <- function(x) {
+  return((x-min(x)))/(max(x)-min(x))
+}
+
+
+
 ```
