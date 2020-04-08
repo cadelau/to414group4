@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 investments <- read.csv("investments_VC.csv")
+investments <- investments[complete.cases(investments),]
 str(investments)
 summary(investments)
 
@@ -27,10 +28,19 @@ investments$state_code <- NULL
 investments$region <- NULL
 investments$city <- NULL
 
+investments$founded_at <- NULL
+investments$founded_month <- NULL
+investments$founded_quarter <- NULL
+investments$founded_year <- NULL
+investments$first_funding_at <- NULL
+investments$last_funding_at <- NULL
+investments$category_list <- NULL
+
 #first funding at and last funding at should be interpreted as dates
 
 #need binary decision for logistic regression?
-investments$status_operating <- ifelse(investments$status == "operating",1,0)
+summary(investments$status)
+investments$outcome <- ifelse(investments$status == "operating" | investments$status == "acquired",1,0)
 
 investments_new <- investments
 investments_new$status <- NULL
@@ -41,6 +51,18 @@ normalize <- function(x) {
   return((x-min(x)))/(max(x)-min(x))
 }
 
-
-
+index = which(colnames(investments_new)=="outcome")
+inv_norm <- as.data.frame(lapply(investments_new[,-index], as.numeric))
+inv_norm <- as.data.frame(lapply(investments_new[,-index], normalize))
+inv_norm$outcome = investments_new$outcome
+str(inv_norm)
 ```
+
+
+Initial Logistic Regression Model
+
+```{r}
+log_mod <- glm(outcome ~ ., data = inv_norm, family = binomial(link = "logit"))
+summary(log_mod)
+```
+
