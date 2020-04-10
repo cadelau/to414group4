@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-shop <- read.csv("bank-additional/online_shoppers_intention.csv")
+shop <- read.csv("online_shoppers_intention.csv")
 str(shop)
 
 shop$Month <- NULL
