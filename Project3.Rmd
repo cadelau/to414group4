@@ -1,0 +1,68 @@
+---
+title: "Project3"
+author: "Naman Gupta"
+date: "3/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+investments <- read.csv("investments_VC.csv")
+investments <- investments[complete.cases(investments),]
+str(investments)
+summary(investments)
+
+investments$funding_total_usd <- as.numeric(investments$funding_total_usd)
+investments$permalink <- NULL
+investments$name <- NULL
+investments$homepage_url <- NULL
+
+#probably valuable though, but factors with lots of levels right now, so would end up with a lot of model matrix columns?
+investments$market <- NULL 
+investments$country_code <- NULL
+investments$state_code <- NULL
+investments$region <- NULL
+investments$city <- NULL
+
+investments$founded_at <- NULL
+investments$founded_month <- NULL
+investments$founded_quarter <- NULL
+investments$founded_year <- NULL
+investments$first_funding_at <- NULL
+investments$last_funding_at <- NULL
+investments$category_list <- NULL
+
+#first funding at and last funding at should be interpreted as dates
+
+#need binary decision for logistic regression?
+summary(investments$status)
+investments$outcome <- ifelse(investments$status == "operating" | investments$status == "acquired",1,0)
+
+investments_new <- investments
+investments_new$status <- NULL
+
+str(investments_new)
+#normalize necessary columns, probably after model matrix
+normalize <- function(x) {
+  return((x-min(x)))/(max(x)-min(x))
+}
+
+index = which(colnames(investments_new)=="outcome")
+inv_norm <- as.data.frame(lapply(investments_new[,-index], as.numeric))
+inv_norm <- as.data.frame(lapply(investments_new[,-index], normalize))
+inv_norm$outcome = investments_new$outcome
+str(inv_norm)
+```
+
+
+Initial Logistic Regression Model
+
+```{r}
+log_mod <- glm(outcome ~ ., data = inv_norm, family = binomial(link = "logit"))
+summary(log_mod)
+```
+
