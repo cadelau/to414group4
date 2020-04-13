@@ -1,0 +1,17 @@
+---
+title: "Data Visualization"
+author: "Samuel Bugaieski"
+date: "4/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+shopping <- read.csv("online_shoppers_intention.csv")
+```
+
+#This is a test to create the data visualization markdown file
+
