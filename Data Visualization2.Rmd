@@ -37,6 +37,8 @@ probbymonth <- tapply(shopping$Revenue, shopping$Month, mean)
 plot(probbymonth)
 
 str(shopping$Month)
+
+#test
 ```
 
 
