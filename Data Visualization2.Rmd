@@ -1,0 +1,45 @@
+---
+title: "Data Visualization"
+author: "Samuel Bugaieski"
+date: "4/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+shopping <- read.csv("online_shoppers_intention.csv")
+str(shopping)
+
+#converting weekend and revenue variables into a numeric value
+shopping$WeekendD <- as.numeric(shopping$Weekend)
+shopping$RevenueD <- as.numeric(shopping$Revenue)
+shopping$Weekend <- shopping$WeekendD
+shopping$Revenue <- shopping$RevenueD
+shopping$WeekendD <- NULL
+shopping$RevenueD <- NULL
+
+#Dividing variables by their Dependent Variable
+success <- shopping[shopping$Revenue == 1,]
+fail <- shopping[shopping$Revenue == 0,]
+
+
+
+```
+
+#Comparison of results with respect to time
+
+```{r}
+probbymonth <- tapply(shopping$Revenue, shopping$Month, mean)
+
+plot(probbymonth)
+
+str(shopping$Month)
+```
+
+
+
+
+
