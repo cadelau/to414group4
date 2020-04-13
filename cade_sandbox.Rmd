@@ -1,0 +1,42 @@
+---
+title: "Cade Sandbox"
+author: "Cade Lau, cadelau@umich.edu"
+date: "4/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+shop <- read.csv("online_shoppers_intention.csv")
+str(shop)
+
+shop$Month <- NULL
+shop$OperatingSystems <- NULL
+shop$Browser <- NULL
+shop$Region <- NULL
+shop$TrafficType <- NULL
+
+shop$Weekend <- ifelse(shop$Weekend == TRUE, 1, 0)
+shop$Revenue <- ifelse(shop$Revenue == TRUE, 1, 0)
+
+index = which(colnames(shop)=="Revenue")
+
+shop_mm <- as.data.frame(model.matrix(~. - 1, data = shop[,-index]))
+shop_mm$Revenue <- shop$Revenue
+
+str(shop_mm)
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+
+shop_norm <- as.data.frame(lapply(shop_mm[,-index], normalize))
+summary(shop_norm)
+shop_norm$PageValues <- NULL
+
+log_mod <- glm(Revenue ~ ., data = shop_norm, family = binomial(link = "logit"))
+summary(log_mod)
+```
