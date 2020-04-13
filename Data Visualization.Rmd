@@ -11,7 +11,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 shopping <- read.csv("online_shoppers_intention.csv")
+str(shopping)
+
+#converting weekend and revenue variables into a numeric value
+shopping$WeekendD <- as.numeric(shopping$Weekend)
+shopping$RevenueD <- as.numeric(shopping$Revenue)
+shopping$Weekend <- shopping$WeekendD
+shopping$Revenue <- shopping$RevenueD
+shopping$WeekendD <- NULL
+shopping$RevenueD <- NULL
+
 ```
 
-#This is a test to create the data visualization markdown file
 
