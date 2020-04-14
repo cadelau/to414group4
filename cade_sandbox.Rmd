@@ -37,6 +37,8 @@ normalize <- function(x) {
   return((x - min(x)) / (max(x) - min(x)))
 }
 
+summary(shop$PageValues)
+
 shop_norm <- as.data.frame(lapply(shop_mm[,-index], normalize))
 summary(shop_norm)
 
