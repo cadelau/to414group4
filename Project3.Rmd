@@ -1,0 +1,16 @@
+---
+title: "Project3"
+author: "Naman Gupta"
+date: "3/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+shopping <- read.csv("online_shoppers_intention.csv")
+```
+
