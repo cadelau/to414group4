@@ -18,23 +18,33 @@ library(glmnet)
 shopping <- read.csv("online_shoppers_intention.csv")
 str(shopping)
 
-shopping$OperatingSystems <- as.factor(shopping$OperatingSystems)
-shopping$Browser <- as.factor(shopping$Browser)
+# shopping$OperatingSystems <- as.factor(shopping$OperatingSystems)
+# shopping$Browser <- as.factor(shopping$Browser)
+# shopping$Region <- as.factor(shopping$Region)
+# shopping$TrafficType <- as.factor(shopping$TrafficType)
+# shopping$Weekend <- as.factor(shopping$Weekend)
+# shopping$Revenue <- as.factor(shopping$Revenue)
+shopping$Month <- NULL
+shopping$OperatingSystems <- NULL
+shopping$Browser <- NULL
 shopping$Region <- as.factor(shopping$Region)
-shopping$TrafficType <- as.factor(shopping$TrafficType)
+shopping$TrafficType <- NULL
 shopping$Weekend <- as.factor(shopping$Weekend)
 shopping$Revenue <- as.factor(shopping$Revenue)
+
+str(shopping)
 ```
 
 Split test and train
 ```{r}
 y <- shopping$Revenue
+summary(y)
 shopping$Revenue <- NULL
 X = model.matrix( ~ .^2 - 1, shopping)
 
 
 data <- as.data.frame(cbind(X, y))
-data$Revenue <- as.factor(data$y - 1)
+data$Revenue <- as.factor(data$y)
 data$y <- NULL
 
 set.seed(234)
@@ -60,12 +70,20 @@ y_val_mod <- y_train[val_id]
 ```{r}
 log_model <- glm(Revenue ~ ., data=X_train_mod, family="binomial")
 
-train_predict <- predict.glm(log_model, X_train_mod)
-val_predict <- predict.glm(log_model, X_val_mod)
-train_mse <- mean((train_predict - y_train_mod) ^ 2)
-test_mse <- mean((val_predict - y_val_mod) ^ 2)
-train_mse
-test_mse
+
+
+train_pred = predict(log_model, X_train_mod)
+test_pred = predict(log_model, X_val_mod)
+
+train_predProbs = binomial()$linkinv(train_pred)
+test_predProbs = binomial()$linkinv(test_pred)
+
+train_pred <- as.factor(as.numeric(train_predProbs > 0.5))
+test_pred <- as.factor(as.numeric(test_predProbs > 0.5))
+
+train_err = mean(as.numeric(train_pred) != as.numeric(y_train_mod)); train_err
+test_err = mean(as.numeric(test_pred) != as.numeric(y_val_mod)); test_err
+
 ```
 
 
