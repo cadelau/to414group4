@@ -11,6 +11,20 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
-shopping <- read.csv("online_shoppers_intention.csv")
+# Set the same seed
+set.seed(123)
+df <- read.csv("online_shoppers_intention.csv")
+
+rows <- sample(nrow(shopping))
+shopping <- df[rows,]
+
+# This is roughly a 70/30 train/test split
+# Only use the train data to tune and improve models right now
+shopping_train <- shopping[1:8630,]
+shopping_test <- shopping[8631:12330,]
 ```
+
+
+
+
 
