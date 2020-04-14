@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+# tune on only the new train set, dont touch new test set
 ```{r}
 shopping <- read.csv("online_shoppers_intention.csv")
 str(shopping)
@@ -34,8 +34,10 @@ library(gmodels)
 library(caret)
 ```
 
+# try 5 or 10 fold cross validation
+# determine 
 ```{r}
-set.seed(23)
+set.seed(123)
 shopping_random <- shopping[sample(nrow(shopping)), ]
 
 normalize <- function(x) {
@@ -53,11 +55,15 @@ shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
 
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
+
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=11)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
+
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=31)
@@ -65,11 +71,15 @@ shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
 
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
+
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=51)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
+
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=101)
@@ -77,20 +87,26 @@ shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
 
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
+
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=sqrt(nrow(shopping)))
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
 
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
+
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
                       cl = shopping_train_labels, k=151)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
+
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 ```
 
-
+# IGNORE FOR NOW
 ```{r}
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
@@ -109,11 +125,9 @@ shopping_train <- shopping_n[in_train, ]
 shopping_test <- shopping_n[-in_train, ]
 shopping_train_labels <- shopping[in_train, 1]
 shopping_test_labels <- shopping[-in_train, 1]
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
-                      cl = shopping_train_labels, k=13)
+shopping_test_pred <- knn(train = shopping_train, test = shopping_test, cl = c("0","1"), k=13)
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
-confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
-
+confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1") # outputs a bunch of different statistics, accuracy, f score, balance accuracy
 ```
 

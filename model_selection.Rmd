@@ -1,0 +1,90 @@
+---
+title: "Model Selection"
+author: "Gabby Bracken"
+date: "4/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(glmnet)
+```
+
+
+```{r}
+shopping <- read.csv("online_shoppers_intention.csv")
+str(shopping)
+
+# shopping$OperatingSystems <- as.factor(shopping$OperatingSystems)
+# shopping$Browser <- as.factor(shopping$Browser)
+# shopping$Region <- as.factor(shopping$Region)
+# shopping$TrafficType <- as.factor(shopping$TrafficType)
+# shopping$Weekend <- as.factor(shopping$Weekend)
+# shopping$Revenue <- as.factor(shopping$Revenue)
+shopping$Month <- NULL
+shopping$OperatingSystems <- NULL
+shopping$Browser <- NULL
+shopping$Region <- as.factor(shopping$Region)
+shopping$TrafficType <- NULL
+shopping$Weekend <- as.factor(shopping$Weekend)
+shopping$Revenue <- as.factor(shopping$Revenue)
+
+str(shopping)
+```
+
+Split test and train
+```{r}
+y <- shopping$Revenue
+summary(y)
+shopping$Revenue <- NULL
+X = model.matrix( ~ .^2 - 1, shopping)
+
+
+data <- as.data.frame(cbind(X, y))
+data$Revenue <- as.factor(data$y)
+data$y <- NULL
+
+set.seed(234)
+test_id = sample(nrow(shopping),floor(0.25*nrow(shopping)))
+X_train <- data[-test_id,]
+X_test  <- data[test_id,]
+
+y_train<- y[-test_id]
+y_test <- y[test_id]
+```
+
+
+Split train further into validation and train so that the validation can be used to do model selection without touching test set yet
+```{r}
+val_id = sample(nrow(shopping[-test_id,]),floor(0.2*nrow(shopping[-test_id,])))
+X_train_mod <- X_train[-val_id,]
+X_val_mod  <- X_train[val_id,]
+
+y_train_mod <- y_train[-val_id]
+y_val_mod <- y_train[val_id]
+```
+
+```{r}
+log_model <- glm(Revenue ~ ., data=X_train_mod, family="binomial")
+
+
+
+train_pred = predict(log_model, X_train_mod)
+test_pred = predict(log_model, X_val_mod)
+
+train_predProbs = binomial()$linkinv(train_pred)
+test_predProbs = binomial()$linkinv(test_pred)
+
+train_pred <- as.factor(as.numeric(train_predProbs > 0.5))
+test_pred <- as.factor(as.numeric(test_predProbs > 0.5))
+
+train_err = mean(as.numeric(train_pred) != as.numeric(y_train_mod)); train_err
+test_err = mean(as.numeric(test_pred) != as.numeric(y_val_mod)); test_err
+
+```
+
+
+
