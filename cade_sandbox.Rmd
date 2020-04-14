@@ -10,14 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-shop <- read.csv("online_shoppers_intention.csv")
-str(shop)
+df <- read.csv("online_shoppers_intention.csv")
+str(df)
+
+set.seed(123)
+rows <- sample(nrow(df))
+shop <- df[rows,]
 
 shop$Month <- NULL
 shop$OperatingSystems <- NULL
 shop$Browser <- NULL
 shop$Region <- NULL
 shop$TrafficType <- NULL
+shop$PageValues <- NULL
 
 shop$Weekend <- ifelse(shop$Weekend == TRUE, 1, 0)
 shop$Revenue <- ifelse(shop$Revenue == TRUE, 1, 0)
@@ -32,11 +37,47 @@ normalize <- function(x) {
   return((x - min(x)) / (max(x) - min(x)))
 }
 
-
 shop_norm <- as.data.frame(lapply(shop_mm[,-index], normalize))
 summary(shop_norm)
-shop_norm$PageValues <- NULL
 
 log_mod <- glm(Revenue ~ ., data = shop_norm, family = binomial(link = "logit"))
 summary(log_mod)
 ```
+
+
+
+```{r}
+library(C50)
+library(gmodels)
+library(partykit)
+library(caret)
+shop_norm$Revenue <- as.factor(shop_norm$Revenue)
+
+shop_train <- shop_norm[1:8630,]
+shop_test <- shop_norm[8631:12330,]
+
+summary(shop_train$Revenue)
+
+error_cost <- matrix(c(0, 1, 4, 0), nrow = 2)
+
+# Model 1
+decision_tree_mod1 <- C5.0(Revenue ~ ProductRelated_Duration + ExitRates + SpecialDay + VisitorTypeNew_Visitor, data = shop_train, costs = error_cost)
+plot(decision_tree_mod1)
+
+mod1_preds <- predict(decision_tree_mod1, shop_test)
+# CrossTable(shop_test$Revenue, mod1_preds,
+#           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+#           dnn = c('actual revenue', 'predicted revenue'))
+confusionMatrix(as.factor(mod1_preds), as.factor(shop_test$Revenue))
+
+# Model 2
+decision_tree_mod2 <- C5.0(Revenue ~ ., data = shop_train, costs = error_cost)
+plot(decision_tree_mod2)
+
+mod2_preds <- predict(decision_tree_mod2, shop_test)
+# CrossTable(shop_test$Revenue, mod2_preds,
+#           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+#           dnn = c('actual revenue', 'predicted revenue'))
+confusionMatrix(as.factor(mod2_preds), as.factor(shop_test$Revenue))
+```
+
