@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+# tune on only the new train set, dont touch new test set
 ```{r}
 shopping <- read.csv("online_shoppers_intention.csv")
 str(shopping)
