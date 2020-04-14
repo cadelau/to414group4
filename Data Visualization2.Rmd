@@ -25,21 +25,71 @@ shopping$RevenueD <- NULL
 success <- shopping[shopping$Revenue == 1,]
 fail <- shopping[shopping$Revenue == 0,]
 
+#Creating numeric variable for Month
+shopping[shopping$Month == "Feb",]$MonthN <- 2
+shopping[shopping$Month == "Mar",]$MonthN <- 3
+shopping[shopping$Month == "May",]$MonthN <- 5
+shopping[shopping$Month == "June",]$MonthN <- 6
+shopping[shopping$Month == "Jul",]$MonthN <- 7
+shopping[shopping$Month == "Aug",]$MonthN <- 8
+shopping[shopping$Month == "Sep",]$MonthN <- 9
+shopping[shopping$Month == "Oct",]$MonthN <- 10
+shopping[shopping$Month == "Nov",]$MonthN <- 11
+shopping[shopping$Month == "Dec",]$MonthN <- 12
 
+
+shopping
 
 ```
 
 #Comparison of results with respect to time
 
 ```{r}
-probbymonth <- tapply(shopping$Revenue, shopping$Month, mean)
+#Not sure if this is valuable from the standpoint of creating a model, but evaluating effect of timeframes on sales conversion
 
-plot(probbymonth)
+barplot(tapply(shopping$Revenue, shopping$MonthN, mean))
+#Customers significantly more likely to purchase between months of July and November
 
-str(shopping$Month)
+barplot(tapply(shopping$Revenue, shopping$Weekend, mean), ylim = c(0,.3))
+#Customers marginally more likely to purchase on weekends
 
-#test
+barplot(tapply(shopping$Revenue, shopping$SpecialDay, mean))
+#May have done something wrong here but this seems to suggest a counterintuitive trend towards buying around special days
+
 ```
+
+#Exploring impact of region on purchase
+```{r}
+barplot(tapply(shopping$Revenue, shopping$Region, mean), ylim = c(0,.2))
+#Region does not seem to be overly significant in impacting sales conversion
+
+```
+
+#Exploring impact of customer experience metrics
+```{r}
+barplot(tapply(shopping$Revenue, shopping$OperatingSystems, mean), ylim = c(0,.25))
+#Names are not included in dataframe or attached guide - OS 8 has the highest sales conversion by a small margin and OS 3 and 6 are notably lower than the average
+
+barplot(tapply(shopping$Revenue, shopping$Browser, mean))
+#Names are not included in dataframe or attached guide - Browsers 12 and 13 have the highest sales conversion by a decent margin and Browsers 3 and 6 are notably lower than the average
+
+barplot(tapply(shopping$Revenue, shopping$TrafficType, mean))
+#Names are not included in dataframe or attached guide - Significant difference in sales turnover across different types of traffic.
+
+barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25))
+#New visitors seem the most likely to purchase, Returning visitors are least likely
+
+```
+
+#Changing my approach testing for interactions now
+
+```{r}
+baseplot <- ggplot(data = shopping, aes(Administrative, Informational))
+
+baseplot + geom_point()
+```
+
+
 
 
 
