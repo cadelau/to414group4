@@ -1,0 +1,92 @@
+---
+title: "FinalProject"
+author: "Vinayak Kannan"
+date: "4/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("online_shoppers_intention.csv")
+data$Revenue <- as.factor(ifelse(data$Revenue == TRUE, 1, 0))
+JFMA <- c("Jan", "Feb", "Mar", "Apr")
+MJJA <- c("May", "June", "Jul", "Aug")
+SOND <- c("Sep", "Oct", "Nov", "Dec")
+data$Month <- as.factor(ifelse(data$Month %in% JFMA, "JFMA",
+              ifelse(data$Month %in% MJJA, "MJJA", "SOND")))
+set.seed(123)
+data_holdout <- sample.int(nrow(data), size = nrow(data) * 0.3, replace = F)
+data_holdout <- data[data_holdout,]
+```
+
+```{r}
+set.seed(123)
+sample_train <- sample.int(nrow(data), size = nrow(data) * 0.8, replace = F)
+data_train <- data[sample_train,]
+data_test <- data[-sample_train,]
+```
+# SVM - Final Model, use svmfit as my final model!
+```{r}
+library(kernlab)
+library(e1071)
+# Best Model - svmfit
+tuned = tune.svm(Revenue~., data = data_train, class.weights=c("0"=0.44,"1"=1), tunecontrol=tune.control(cross=10))
+summary(tuned)
+svmfit = tuned$best.model
+table(data_test[,c("Revenue")], predict(svmfit, data_test, type = "response"))
+```
+
+# Other models
+```{r}
+# Vanilladot
+tele_classifier <- ksvm(Revenue ~ ., data = data_train,
+                          kernel = "vanilladot", class.weights=c("0"=0.44,"1"=1))
+tele_predictor <- predict(tele_classifier, data_test, type = "response")
+table(tele_predictor, data_test$Revenue)
+agreement <- tele_predictor == data_test$Revenue
+table(agreement)
+"vanilla dot"
+prop.table(table(agreement))
+
+# rbfdot
+tele_classifier <- ksvm(Revenue ~ ., data = data_train,kernel = "rbfdot")
+tele_predictor <- predict(tele_classifier, data_test, type = "response")
+table(tele_predictor, data_test$Revenue)
+agreement <- tele_predictor == data_test$Revenue
+table(agreement)
+"rbf dot"
+prop.table(table(agreement))
+
+# tanhdot
+tele_classifier <- ksvm(Revenue ~ ., data = data_train,
+                          kernel = "tanhdot")
+tele_predictor <- predict(tele_classifier, data_test, type = "response")
+table(tele_predictor, data_test$Revenue)
+agreement <- tele_predictor == data_test$Revenue
+table(agreement)
+"tanhdot dot"
+prop.table(table(agreement))
+
+# laplacedot
+tele_classifier <- ksvm(Revenue ~ ., data = data_train,kernel = "laplacedot",  class.weights=c("0"=0.3,"1"=1))
+tele_predictor <- predict(tele_classifier, data_test, type = "response")
+table(tele_predictor, data_test$Revenue)
+agreement <- tele_predictor == data_test$Revenue
+table(agreement)
+"laplace dot"
+prop.table(table(agreement))
+
+# besseldot
+tele_classifier <- ksvm(Revenue ~ ., data = data_train,
+                          kernel = "besseldot")
+tele_predictor <- predict(tele_classifier, data_test, type = "response")
+table(tele_predictor, data_test$Revenue)
+agreement <- tele_predictor == data_test$Revenue
+table(agreement)
+"bessel dot"
+prop.table(table(agreement))
+```
+
