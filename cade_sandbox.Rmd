@@ -10,12 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-df <- read.csv("online_shoppers_intention.csv")
-str(df)
-
+library(C50)
+library(gmodels)
+library(partykit)
+library(caret)
 set.seed(123)
-rows <- sample(nrow(df))
-shop <- df[rows,]
+
+shop <- read.csv("online_shoppers_intention.csv")
 
 shop$Month <- NULL
 shop$OperatingSystems <- NULL
@@ -27,7 +28,7 @@ shop$PageValues <- NULL
 shop$Weekend <- ifelse(shop$Weekend == TRUE, 1, 0)
 shop$Revenue <- ifelse(shop$Revenue == TRUE, 1, 0)
 
-index = which(colnames(shop)=="Revenue")
+index = which(colnames(shop) == "Revenue")
 
 shop_mm <- as.data.frame(model.matrix(~. - 1, data = shop[,-index]))
 shop_mm$Revenue <- shop$Revenue
@@ -44,42 +45,64 @@ summary(shop_norm)
 
 log_mod <- glm(Revenue ~ ., data = shop_norm, family = binomial(link = "logit"))
 summary(log_mod)
-```
 
-
-
-```{r}
-library(C50)
-library(gmodels)
-library(partykit)
-library(caret)
 shop_norm$Revenue <- as.factor(shop_norm$Revenue)
 
-shop_train <- shop_norm[1:8630,]
-shop_test <- shop_norm[8631:12330,]
+rows <- sample(nrow(shop_norm))
+shop_new <- shop_norm[rows,]
 
-summary(shop_train$Revenue)
-
-error_cost <- matrix(c(0, 1, 4, 0), nrow = 2)
-
-# Model 1
-decision_tree_mod1 <- C5.0(Revenue ~ ProductRelated_Duration + ExitRates + SpecialDay + VisitorTypeNew_Visitor, data = shop_train, costs = error_cost)
-plot(decision_tree_mod1)
-
-mod1_preds <- predict(decision_tree_mod1, shop_test)
-# CrossTable(shop_test$Revenue, mod1_preds,
-#           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
-#           dnn = c('actual revenue', 'predicted revenue'))
-confusionMatrix(as.factor(mod1_preds), as.factor(shop_test$Revenue))
-
-# Model 2
-decision_tree_mod2 <- C5.0(Revenue ~ ., data = shop_train, costs = error_cost)
-plot(decision_tree_mod2)
-
-mod2_preds <- predict(decision_tree_mod2, shop_test)
-# CrossTable(shop_test$Revenue, mod2_preds,
-#           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
-#           dnn = c('actual revenue', 'predicted revenue'))
-confusionMatrix(as.factor(mod2_preds), as.factor(shop_test$Revenue))
+shop_train <- shop_new[1:8630,]
+shop_test <- shop_new[8631:12330,]
 ```
+
+# 10-Fold CV for Decision Tree
+
+```{r}
+index = which(colnames(shop_train)=="Revenue")
+folds = createFolds(shop_train$Revenue, 10)
+
+dt_cv1 = lapply(folds, function(x) {
+  training_fold <- shop_train[-x,]
+  test_fold <- shop_train[x,]
+  
+  clf <- C5.0(Revenue ~ .,
+              data = training_fold)
+  
+  y_pred <- predict(clf, newdata = test_fold[,-index])
+  cm = table(test_fold$Revenue, y_pred)
+  balanced_accuracy <- 0.5*(cm[1,1]/(cm[1,1]+cm[1,2]) + cm[2,2]/(cm[2,2]+cm[2,1]))
+  return(balanced_accuracy)
+})
+dt1_bac <- mean(as.numeric(dt_cv1))
+dt1_bac
+
+
+dt_cv2 = lapply(folds, function(x) {
+  training_fold <- shop_train[-x,]
+  test_fold <- shop_train[x,]
+  
+  error_cost <- matrix(c(0, 1, 4, 0), nrow = 2)
+  
+  clf <- C5.0(Revenue ~ .,
+              data = training_fold,
+              costs = error_cost)
+  
+  y_pred <- predict(clf, newdata = test_fold[,-index])
+  cm = table(test_fold$Revenue, y_pred)
+  balanced_accuracy <- 0.5*(cm[1,1]/(cm[1,1]+cm[1,2]) + cm[2,2]/(cm[2,2]+cm[2,1]))
+  return(balanced_accuracy)
+})
+dt2_bac <- mean(as.numeric(dt_cv2))
+dt2_bac
+```
+
+
+
+
+
+
+
+
+
+
 
