@@ -11,12 +11,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(glmnet)
+library(caret)
 ```
 
 
 ```{r}
 shopping <- read.csv("online_shoppers_intention.csv")
 str(shopping)
+
+set.seed(123)
+rows <- sample(nrow(shopping))
+shopping <- shopping[rows,]
 
 # shopping$OperatingSystems <- as.factor(shopping$OperatingSystems)
 # shopping$Browser <- as.factor(shopping$Browser)
@@ -32,11 +37,28 @@ shopping$TrafficType <- NULL
 shopping$Weekend <- as.factor(shopping$Weekend)
 shopping$Revenue <- as.factor(shopping$Revenue)
 
+
+
+shop_train <- shopping[1:8630,]
+shop_test <- shopping[8631:12330,]
+
+
 str(shopping)
 ```
 
+```{r}
+
+PageValue01 <- ifelse(shopping$PageValues > 0,1,0)
+cor(as.numeric(shopping$Revenue)-1, PageValue01)
+
+confusionMatrix(as.factor(PageValue01), as.factor(as.numeric(shopping$Revenue)-1))
+table(PageValue01)
+```
+
+
 Split test and train
 ```{r}
+
 y <- shopping$Revenue
 summary(y)
 shopping$Revenue <- NULL
@@ -47,8 +69,8 @@ data <- as.data.frame(cbind(X, y))
 data$Revenue <- as.factor(data$y)
 data$y <- NULL
 
-set.seed(234)
-test_id = sample(nrow(shopping),floor(0.25*nrow(shopping)))
+
+#test_id = sample(nrow(shopping),floor(0.25*nrow(shopping)))
 X_train <- data[-test_id,]
 X_test  <- data[test_id,]
 
@@ -66,6 +88,9 @@ X_val_mod  <- X_train[val_id,]
 y_train_mod <- y_train[-val_id]
 y_val_mod <- y_train[val_id]
 ```
+
+
+
 
 ```{r}
 log_model <- glm(Revenue ~ ., data=X_train_mod, family="binomial")
@@ -87,4 +112,10 @@ test_err = mean(as.numeric(test_pred) != as.numeric(y_val_mod)); test_err
 ```
 
 
+```{r}
+library(logisticPCA)
+data("house_votes84")
+help("house_votes84")
+head(house_votes84)
+```
 
