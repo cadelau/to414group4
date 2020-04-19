@@ -19,7 +19,6 @@ library(irr)
 library(ROCR)
 library(ipred)
 library(randomForest)
-
 ```
 
 ```{r}
@@ -33,7 +32,7 @@ shopping <- df[rows,]
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
 shopping_train <- shopping[1:8630,]
-shopping_test <- shopping[8631:12330,]
+shopping_test_DNU <- shopping[8631:12330,]
 
 shopping_train$WeekendD <- as.numeric(shopping_train$Weekend)
 shopping_train$RevenueD <- as.numeric(shopping_train$Revenue)
@@ -46,25 +45,26 @@ shopping_train$NewVisitor <- ifelse(shopping_train$VisitorType == "New_Visitor",
 shopping_train$VisitorType <- NULL
 shopping_train$HolidaySeason <- ifelse(shopping_train$Month == "Oct" | shopping_train$Month == "Nov" | shopping_train$Month == "Dec",1,0)
 shopping_train$Month <- NULL
-str(shopping_train)
-```
-
-# try 5 or 10 fold cross validation
-# determine 
-```{r}
-set.seed(123)
-shopping_random <- shopping[sample(nrow(shopping)), ]
+summary(shopping_train)
+shopping_use <- shopping_train
 
 normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
-shopping_n <- as.data.frame(lapply(shopping_random[-16], normalize)) #started at column 2, because no point in normalizing the binary "outcome"
-shopping_train <- shopping_n[4001:nrow(shopping), ] #keep rest rows for train
-shopping_test <- shopping_n[1:4000, ] #keep 100 rows for test
-shopping_train_labels <- shopping[4001:nrow(shopping), 16]
-shopping_test_labels <- shopping[1:4000, 16]
+shopping_n <- as.data.frame(lapply(shopping_train[-16], normalize)) #started at column 2, because no point in normalizing the binary "outcome"
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+```
+
+# try 5 or 10 fold cross validation
+# determine
+
+```{r}
+shopping_train1 <- shopping_n[1:7000, ] #keep rest rows for train
+shopping_test <- shopping_n[7001:nrow(shopping_n), ] #keep 100 rows for test
+shopping_train_labels <- shopping[1:7000, 16]
+shopping_test_labels <- shopping[7001:nrow(shopping_n), 16]
+
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=1)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -72,7 +72,7 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=11)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -80,7 +80,7 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=31)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -88,7 +88,7 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=51)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -96,7 +96,7 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=101)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -104,7 +104,7 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=sqrt(nrow(shopping)))
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
@@ -112,13 +112,34 @@ CrossTable(x = shopping_test_labels, y = shopping_test_pred,
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
-shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
+shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=151)
 
 CrossTable(x = shopping_test_labels, y = shopping_test_pred, 
            prop.chisq=FALSE)
 
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
+```
+
+```{r}
+folds <- createFolds(shopping_use$Revenue, k = 10)
+
+shopping_use_train_labels <- shopping_use[1:7000, 16]
+shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
+
+cv_results <- lapply(folds, function(x) {
+  shopping_use_train <- shopping_use[x, ]
+  shopping_use_test <- shopping_use[-x, ]
+  shopping_use_model <- knn(train = shopping_use_train, test = shopping_use_test,
+                      cl = shopping_train_labels, k=sqrt(nrow(shopping_use)))
+  shopping_use_pred <- predict(shopping_use_model, shopping_use_test)
+  shopping_use_actual <- shopping_use_test$default
+  kappa <- kappa2(data.frame(credit_actual, credit_pred))$value
+  return(kappa)
+})
+
+str(cv_results)
+mean(unlist(cv_results))
 ```
 
 # IGNORE FOR NOW
