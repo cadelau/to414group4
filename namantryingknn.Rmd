@@ -164,6 +164,18 @@ fit <- train(Revenue ~ .,
              data       = shopping_use)
 
 fit
+
+trControl <- trainControl(method  = "cv",
+                          number  = 10)
+
+fit <- train(Revenue ~ .,
+             method     = "knn",
+             tuneGrid   = expand.grid(k = 1:10),
+             trControl  = trControl,
+             metric     = "Accuracy",
+             data       = shopping_use)
+
+fit
 ```
 
 
