@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r Data Prep}
 shopping <- read.csv("online_shoppers_intention.csv")
 str(shopping)
 
@@ -26,6 +26,8 @@ success <- shopping[shopping$Revenue == 1,]
 fail <- shopping[shopping$Revenue == 0,]
 
 #Creating numeric variable for Month
+shopping$MonthN <- 1
+
 shopping[shopping$Month == "Feb",]$MonthN <- 2
 shopping[shopping$Month == "Mar",]$MonthN <- 3
 shopping[shopping$Month == "May",]$MonthN <- 5
@@ -37,9 +39,6 @@ shopping[shopping$Month == "Oct",]$MonthN <- 10
 shopping[shopping$Month == "Nov",]$MonthN <- 11
 shopping[shopping$Month == "Dec",]$MonthN <- 12
 
-
-shopping
-
 ```
 
 #Comparison of results with respect to time
@@ -50,11 +49,24 @@ shopping
 barplot(tapply(shopping$Revenue, shopping$MonthN, mean))
 #Customers significantly more likely to purchase between months of July and November
 
+#^with GGPlot as stacked bar with total count (also not sure if density graph is helpful here):
+MonthDensity <- ggplot(data = shopping, aes(x = MonthN, colour = colrange))
+MonthDensity + geom_bar()
+MonthDensity + geom_density()
+
 barplot(tapply(shopping$Revenue, shopping$Weekend, mean), ylim = c(0,.3))
 #Customers marginally more likely to purchase on weekends
 
+#^with GGPlot as stacked bar with total count:
+WeekendDensity <- ggplot(data = shopping, aes(x = Weekend, colour = colrange))
+WeekendDensity + geom_bar()
+
 barplot(tapply(shopping$Revenue, shopping$SpecialDay, mean))
 #May have done something wrong here but this seems to suggest a counterintuitive trend towards buying around special days
+
+#^with GGPlot as stacked bar with total count:
+SDDensity <- ggplot(data = shopping, aes(x = SpecialDay, colour = colrange))
+SDDensity + geom_bar()
 
 ```
 
@@ -84,9 +96,42 @@ barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25))
 #Changing my approach testing for interactions now
 
 ```{r}
-baseplot <- ggplot(data = shopping, aes(Administrative, Informational))
+library(ggplot2)
 
-baseplot + geom_point()
+colrange <- ifelse(shopping$Revenue == 1, "Purchase", "No Purchase")
+
+#Testing relationship between Administrative and Informational page visits and duration
+
+Admin_vs_Inf <- ggplot(data = shopping, aes(x = Administrative, y = Informational, colour = colrange))  + geom_jitter(alpha = 0.5)
+Admin_vs_Inf + geom_point()
+#Added Jitter because there was a lot of overlap
+
+Admin_vs_Inf_Duration <- ggplot(data = shopping, aes(x = Administrative_Duration, y = Informational_Duration, colour = colrange))
+Admin_vs_Inf_Duration + geom_point()
+
+#Testing relationship between Informational and Product page visits and duration
+
+Inf_vs_Prod <- ggplot(data = shopping, aes(x = Informational, y = ProductRelated, colour = colrange)) + geom_jitter(alpha = 0.5)
+Inf_vs_Prod + geom_point()
+#Added Jitter because there was a lot of overlap
+
+Inf_vs_Prod_Duration <- ggplot(data = shopping, aes(x = Informational_Duration, y = ProductRelated_Duration, colour = colrange))
+Inf_vs_Prod_Duration + geom_point()
+
+#Testing relationship between Product and Administrative page visits and duration
+
+Prod_vs_Admin <- ggplot(data = shopping, aes(x = ProductRelated, y = Administrative, colour = colrange)) + geom_jitter(alpha = 0.5)
+Prod_vs_Admin + geom_point()
+#Added Jitter because there was a lot of overlap
+
+Prod_vs_Admin_Duration <- ggplot(data = shopping, aes(x = ProductRelated_Duration, y = Administrative_Duration, colour = colrange))
+Prod_vs_Admin_Duration + geom_point()
+
+#Testing relationship between Bounce Rate and Exit Rate
+
+Bounce_vs_Exit <- ggplot(data = shopping, aes(x = BounceRates, y = ExitRates, colour = colrange))
+Bounce_vs_Exit + geom_point()
+
 ```
 
 
