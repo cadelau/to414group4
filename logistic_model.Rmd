@@ -1,0 +1,190 @@
+---
+title: "Model Selection"
+author: "Gabby Bracken"
+date: "4/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(glmnet)
+library(caret)
+```
+
+```{r}
+set.seed(123)
+df <- read.csv("online_shoppers_intention.csv")
+
+rows <- sample(nrow(df))
+shopping <- df[rows,]
+```
+
+
+```{r}
+# shopping$OperatingSystems <- as.factor(shopping$OperatingSystems)
+# shopping$Browser <- as.factor(shopping$Browser)
+# shopping$Region <- as.factor(shopping$Region)
+# shopping$TrafficType <- as.factor(shopping$TrafficType)
+# shopping$Weekend <- as.factor(shopping$Weekend)
+# shopping$Revenue <- as.factor(shopping$Revenue)
+shopping$Month <- NULL
+shopping$OperatingSystems <- NULL
+shopping$Browser <- NULL
+shopping$Region <- as.factor(shopping$Region)
+shopping$TrafficType <- NULL
+shopping$Weekend <- as.factor(shopping$Weekend)
+
+shopping$Revenue <- as.factor(as.numeric(shopping$Revenue))
+
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+# shopping_n <- as.data.frame(lapply(shopping[c(11:18)*-1], normalize)) 
+# shopping_n[,names(shopping)[11:18]] <- shopping[,11:18]
+shopping_n <- as.data.frame(lapply(shopping[c(11:14)*-1], normalize)) 
+shopping_n[,names(shopping)[11:14]] <- shopping[,11:14]
+
+
+
+train_id <- 1:8630
+test_id <- 8631:12330
+
+shop_train <- shopping_n[train_id,]
+shop_test <- shopping_n[test_id,]
+
+str(shopping)
+```
+
+```{r}
+val_id = sample(8630,floor(0.2*8630))
+X_train_subset <- shop_train[-val_id,]
+X_val  <- shop_train[val_id,]
+
+y_train_subset <- shop_train$Revenue[-val_id]
+y_val <- shop_train$Revenue[val_id]
+```
+
+```{r}
+initial_model <- glm(Revenue ~ ., data=X_train_subset, family="binomial")
+summary(initial_model)
+```
+
+```{r}
+train_pred = predict(initial_model, X_train_subset)
+test_pred = predict(initial_model, X_val)
+
+train_predProbs = binomial()$linkinv(train_pred)
+test_predProbs = binomial()$linkinv(test_pred)
+
+threshold <- c(1:20)/20
+train_errors <- c(1:20)*0
+test_errors <- c(1:20)*0
+kappa <- c(1:20)*0
+for(i in 1:20){
+  train_pred <- as.factor(as.numeric(train_predProbs > threshold[i]))
+  test_pred <- as.factor(as.numeric(test_predProbs > threshold[i]))
+  
+  train_errors[i] = mean(as.numeric(train_pred) != as.numeric(y_train_subset));
+  test_errors[i] = mean(as.numeric(test_pred) != as.numeric(y_val));
+  
+  kappa[i] = confusionMatrix(test_pred, y_val)[[3]][[2]]
+  
+}
+best_t_acc = threshold[which.min(test_errors)];best_t_acc
+best_t_kappa = threshold[which.max(kappa)];best_t_kappa
+
+kappa
+test_errors
+
+```
+
+
+
+Split test and train
+```{r}
+
+y <- shopping$Revenue
+summary(y)
+shopping$Revenue <- NULL
+X = model.matrix( ~ .^2 - 1, shopping)
+
+
+data <- as.data.frame(cbind(X, y))
+data$Revenue <- as.factor(data$y)
+data$y <- NULL
+
+
+X_train <- data[1:8630,]
+X_test  <- data[8631:12330,]
+
+y_train<- y[1:8630]
+y_test <- y[8631:12330]
+```
+
+
+Split train further into validation and train so that the validation can be used to do model selection without touching test set yet
+
+
+
+
+
+```{r}
+log_model <- glm(Revenue ~ ., data=X_train_mod, family="binomial")
+
+
+
+train_pred = predict(log_model, X_train_mod)
+test_pred = predict(log_model, X_val_mod)
+
+train_predProbs = binomial()$linkinv(train_pred)
+test_predProbs = binomial()$linkinv(test_pred)
+
+train_pred <- as.factor(as.numeric(train_predProbs > 0.5))
+test_pred <- as.factor(as.numeric(test_predProbs > 0.5))
+
+train_err = mean(as.numeric(train_pred) != as.numeric(y_train_mod)); train_err
+test_err = mean(as.numeric(test_pred) != as.numeric(y_val_mod)); test_err
+
+```
+
+```{r}
+X = model.matrix(Asset_1_BRet_10f ~ .^2 - 1, BRet_full)
+y <- BRet_full$Asset_1_BRet_10f
+
+lasso.mod = glmnet(X[train_id,], y[train_id], alpha=1, family=binomial)
+cv.mod = cv.glmnet(X[train_id,], y[train_id], alpha=1, family=binomial)
+
+bestlam = cv.mod$lambda.min
+
+c<-coef(lasso.mod,s=bestlam ,exact=TRUE)
+inds<-which(c!=0)
+variables<-row.names(c)[inds]
+variables<-variables[variables != '(Intercept)']
+
+outcome <- "Asset_1_BRet_10f"
+variables[81] = "."
+
+# our modeling effort, 
+# fully parameterized!
+form_lasso <- as.formula(
+  paste(outcome, 
+        paste(variables, collapse = " + "), 
+        sep = " ~ "))
+
+lm_mod_adv <- lm(form_lasso, data = BRet_full[train_id,])
+summary(lm_mod_adv)
+```
+
+
+
+```{r}
+library(logisticPCA)
+data("house_votes84")
+help("house_votes84")
+head(house_votes84)
+```
+
