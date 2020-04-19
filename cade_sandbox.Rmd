@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# do k fold cross validation
 ```{r}
 df <- read.csv("online_shoppers_intention.csv")
 str(df)
