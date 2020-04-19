@@ -19,6 +19,7 @@ library(irr)
 # library(ROCR)
 library(ipred)
 library(randomForest)
+library(FNN)
 ```
 
 ```{r}
@@ -63,7 +64,7 @@ shopping_test <- shopping_n[7001:nrow(shopping_n), ] #keep 1000 rows for test
 shopping_train_labels <- shopping_train[1:7000, 16]
 shopping_test_labels <- shopping_train[7001:nrow(shopping_n), 16]
 
-library(FNN)
+
 
 # I'm just using the test set to choose a K. The K is different based on if you want to select it from your kappa or test error, but both are below.
 knnTestErr = vector(length = length(kvals))
@@ -83,29 +84,10 @@ plot(kappa ~ kvals, type = "b")
 ```
 
 ```{r}
-# define training control
-train_control<- trainControl(method="cv", number=5)
-
-# set the range for k
-k_range = data.frame( k = seq(1,300,10))
-
-# train the model 
-res_CV_KNN <- train(mpg01 ~ horsepower + weight + acceleration,
-             method     = "knn",
-             preProcess = c("center","scale"),
-             tuneGrid   = k_range,
-             trControl  = train_control,
-             metric     = "Accuracy",
-             data       = Auto_new)
-```
-
-
-
-```{r}
 shopping_train1 <- shopping_n[1:7000, ] #keep rest rows for train
 shopping_test <- shopping_n[7001:nrow(shopping_n), ] #keep 1000 rows for test
-shopping_train_labels <- shopping[1:7000, 16]
-shopping_test_labels <- shopping[7001:nrow(shopping_n), 16]
+shopping_train_labels <- shopping_train[1:7000, 16]
+shopping_test_labels <- shopping_train[7001:nrow(shopping_n), 16]
 
 shopping_test_pred <- knn(train = shopping_train1, test = shopping_test,
                       cl = shopping_train_labels, k=3)
