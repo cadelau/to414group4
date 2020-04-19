@@ -31,7 +31,8 @@ shopping <- read.csv("online_shoppers_intention.csv")
 shopping$Month <- NULL
 shopping$OperatingSystems <- NULL
 shopping$Browser <- NULL
-shopping$Region <- as.factor(shopping$Region)
+#shopping$Region <- as.factor(shopping$Region)
+shopping$Region <- NULL
 shopping$TrafficType <- NULL
 shopping$Weekend <- as.factor(shopping$Weekend)
 shopping$Revenue <- as.factor(shopping$Revenue)
@@ -47,18 +48,51 @@ shopping$Revenue <- as.factor(shopping$Revenue)
     + **Revenue**: Changed to factor.
 
 ```{r}
-rows <- sample(nrow(shopping))
-shopping <- shopping[rows,]
+# Normalize data
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+data_to_norm <- shopping[,1:10]
+str(shopping)
+shop_norm <- as.data.frame(lapply(data_to_norm, normalize))
+#shop_norm$Region <- shopping$Region
+shop_norm$VisitorType <- shopping$VisitorType
+shop_norm$Weekend <- shopping$Weekend
+shop_norm$Revenue <- shopping$Revenue
+
+
+# Expand factors into dummy variables
+y <- shop_norm$Revenue
+shop_norm$Revenue <- NULL
+X = as.data.frame(model.matrix( ~ .^2 - 1, shop_norm))
+X$Revenue <- as.factor(y)
+```
+
+* Split data into train and test.
+* Logistic model on train data
+
+```{r}
+rows <- sample(nrow(X))
+shop <- X[rows,]
 
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
-shopping_train <- shopping[1:8630,]
-shopping_test <- shopping[8631:12330,]
+shopping_train <- shop[1:8630,]
+shopping_test <- shop[8631:12330,]
+
+# Logistic Model
+log_model <- glm(Revenue ~ ., data=shopping_train, family="binomial")
+summary(log_model)
 ```
 
 # Models
 
 ### SVM Model
+
+```{r}
+library(kernlab)
+library(e1071)
+```
 
 ### kNN Model
 
