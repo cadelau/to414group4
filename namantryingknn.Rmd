@@ -123,24 +123,27 @@ confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
 
 ```{r}
 folds <- createFolds(shopping_use$Revenue, k = 10)
+shopping_use_train <- shopping_use[1:7000, ] #keep rest rows for train
+shopping_use_test <- shopping_use[7001:nrow(shopping_use), ] #keep 100 rows for test
 
 shopping_use_train_labels <- shopping_use[1:7000, 16]
 shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
 
+shopping_use_model <- knn(train = shopping_use_train, test = shopping_use_test,
+                      cl = shopping_use_train_labels, k=53)
 cv_results <- lapply(folds, function(x) {
   shopping_use_train <- shopping_use[x, ]
   shopping_use_test <- shopping_use[-x, ]
   shopping_use_model <- knn(train = shopping_use_train, test = shopping_use_test,
-                      cl = shopping_train_labels, k=sqrt(nrow(shopping_use)))
+                      cl = shopping_use_train_labels, k=11)
   shopping_use_pred <- predict(shopping_use_model, shopping_use_test)
-  shopping_use_actual <- shopping_use_test$default
+  shopping_use_actual <- shopping_use_test$Revenue
   kappa <- kappa2(data.frame(credit_actual, credit_pred))$value
   return(kappa)
 })
 
 str(cv_results)
 mean(unlist(cv_results))
-
 ```
 
 # IGNORE FOR NOW
