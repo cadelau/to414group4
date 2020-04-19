@@ -146,6 +146,27 @@ str(cv_results)
 mean(unlist(cv_results))
 ```
 
+```{r}
+shopping_use_train <- shopping_use[1:7000, ] #keep rest rows for train
+shopping_use_test <- shopping_use[7001:nrow(shopping_use), ] #keep 100 rows for test
+
+shopping_use_train_labels <- shopping_use[1:7000, 16]
+shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
+
+trControl <- trainControl(method  = "cv",
+                          number  = 5)
+
+fit <- train(Revenue ~ .,
+             method     = "knn",
+             tuneGrid   = expand.grid(k = 1:10),
+             trControl  = trControl,
+             metric     = "Accuracy",
+             data       = shopping_use)
+
+fit
+```
+
+
 # IGNORE FOR NOW
 ```{r}
 confusionMatrix(shopping_test_pred, shopping_test_labels, positive = "1")
