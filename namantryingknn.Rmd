@@ -86,8 +86,9 @@ fit <- train(Revenue ~ .,
 
 fit
 ```
-# try 5 or 10 fold cross validation
-# determine
+
+
+#no need to use rest of these, i think
 ```{r}
 shopping_train1 <- shopping_n[1:7000, ] #keep rest rows for train
 shopping_test <- shopping_n[7001:nrow(shopping_n), ] #keep 100 rows for test
