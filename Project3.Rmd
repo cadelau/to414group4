@@ -1,28 +1,269 @@
 ---
 title: "Project3"
-author: "Naman Gupta"
-date: "3/31/2020"
-output: html_document
+author: "Naman Gupta, Vin Kannan, Gabrielle Bracken, Sam Bugaieski, Cade Lau"
+date: "Monday, April 20, 2020"
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Introduction
 
-```{r}
+Online shopping has grown significatly in the last decade. Massive online sites like Amazon and Walmart are the go-to shopping place now rather than brick and mortar stores for some people. With coronavirus precautions still in effect, people are now unable to even go to physical store locations, driving the need for online shopping even higher. 
+
+Our data deals with customer data when they are on a store's website. The variable of interest is called Revenue, and identifies whether a customer actually bought something while on the site. Not surprisingly, online retail sites have very low rates of people making purchases. With how easy it is to simply get online and browse, we see this as the equivalent of most people "window shopping" online. That is, they are merely there to look, not necessarily buy.
+
+We think that by using machine learning we can identify what factors result in customers actually buying products online. The insights to be drawn could be extremely valuable to the online retail company by improving buy-rates. Further analyses of insights will be given later.
+
+# Data Exploration and Preprocessing
+
+As previously mentioned, the data comes from online shopping sessions, and whether a customer actually bought something during their time on the site. The data has over 12,000 observations and 18 variables. There are columns describing what types of pages the customer visits(administrative, informational, product related), as well as how long they stay on each of those pages. There is information on the customer such as what browser and operating system they are using, and whether or not they are a returning customer. Not all of the data will be necessary, and some of it must be processed further before being useful. We will detail those changes in this section. 
+
+```{r message=FALSE, warning=FALSE}
+library(caret)
 # Set the same seed
 set.seed(123)
-df <- read.csv("online_shoppers_intention.csv")
+shopping <- read.csv("online_shoppers_intention.csv")
 
-rows <- sample(nrow(shopping))
-shopping <- df[rows,]
+shopping$Month <- NULL
+shopping$OperatingSystems <- NULL
+shopping$Browser <- NULL
+#shopping$Region <- as.factor(shopping$Region)
+shopping$Region <- NULL
+shopping$TrafficType <- NULL
+shopping$Weekend <- as.factor(shopping$Weekend)
+shopping$Revenue <- as.factor(shopping$Revenue)
+```
+
+### Preprocessing
+
+1. Altered columns:
+    + **Month**: Removed for now. Could change to a "holiday vs. non holiday" season variable.
+    + **Operating System**: Removed. Should not affect whether someone buys or not.
+    + **Browser**: Removed for same reason as operating system.
+    + **Region**: Removed. Not interested in regional analysis for now.
+    + **Traffic Type**: Removed. Unclear what different values in this column represent.
+    + **Weekend**: Changed to factor.
+    + **Revenue**: Changed to factor.
+2. Data normalization
+    + We will use 0-1 normalization on our numeric columns
+3. Expand factor columns to dummy variables
+    + **Visitor Type**: 3 levels expanded into 3 dummy variables
+    + **Weekend**: 2 levels expanded into 2 dummy variables
+4. Split data into train and test sets
+
+```{r message=FALSE, warning=FALSE}
+# Normalize data
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+data_to_norm <- shopping[,1:10]
+# str(shopping)
+shop_norm <- as.data.frame(lapply(data_to_norm, normalize))
+#shop_norm$Region <- shopping$Region
+shop_norm$VisitorType <- shopping$VisitorType
+shop_norm$Weekend <- shopping$Weekend
+shop_norm$Revenue <- shopping$Revenue
+
+# Expand factors into dummy variables
+y <- shop_norm$Revenue
+shop_norm$Revenue <- NULL
+X = as.data.frame(model.matrix( ~ .^2 - 1, shop_norm))
+X$Revenue <- as.factor(y)
+
+rows <- sample(nrow(X))
+shop <- X[rows,]
 
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
-shopping_train <- shopping[1:8630,]
-shopping_test <- shopping[8631:12330,]
+shopping_train <- shop[1:8630,]
+shopping_test <- shop[8631:12330,]
 ```
+
+### Logistic model
+
+The goal in this section is to fit a logistic regression model using the entire training data set. The results of that model should tell us which variables and interactions are significant to our revenue variable. This should act as a proxy for feature selection. We can then focus on those variables and interaction effects in our later, more sophisticated models. 
+
+```{r message=FALSE, warning=FALSE}
+# Logistic Model
+log_model <- glm(Revenue ~ ., data=shopping_train, family="binomial")
+# summary(log_model)
+```
+
+* Significant variables and interactions
+    + **ProductRelated_Duration**
+    + **PageValues**
+    + **WeekendTRUE**
+    + **Administrative:PageValues**
+    + **Informational:PageValues**
+    + **Informational:VisitorTypeReturning_Visitor**
+    + **Informational_Duration:SpecialDay**
+    + **ProductRelated:ProductRelated_Duration**
+    + **ProductRelated:PageValues**
+    + **BounceRates:PageValues**
+    + **ExitRates:PageValues**
+    + **ExitRates:VisitorTypeReturning_Visitor**
+    + **PageValues:SpecialDay**
+    + **PageValues:WeekendTRUE**
+    + **VisitorTypeReturning_Visitor:WeekendTRUE**
+
+# Models
+
+Using the significant variables from our logistic regression models, we will fit three types of models: SVM, KNN, and decision tree. Once we have each of the three models we will build a stacked model. This stacked model will be explained in further detail later, but can generally be thought of as a combination of our three standard models. Our hope is that the stacked model will deliver better results than each of the three models individually. 
+
+### SVM Model
+
+To start we fit an SVM model. We decide to use 10-fold cross-validation to optimize model parameters. The main paramters to specify in an SVM model are the class weights, and kernel. The best model from the function tune.svm uses a radial basis kernel, and we perform a basic grid search to find class weights of 0.44 and 1 for the classes representing False and True respectively. The importance of setting proper class weights should not be understated. With how imbalanced our data are, we risk fitting a naive classifier that only predicts the more represented class. Adjusting class weights properly in our model eliminates that bias to some extent.
+
+```{r message=FALSE, warning=FALSE}
+library(kernlab)
+library(e1071)
+
+tuned = tune.svm(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE, data = shopping_train, class.weights=c("FALSE"=0.44, "TRUE"=1), tunecontrol=tune.control(cross=10))
+# summary(tuned)
+svmfit = tuned$best.model
+# table(data_test[,c("Revenue")], predict(svmfit, data_test, type = "response"))
+
+svm_predictions <- predict(svmfit, shopping_test)
+svm_cm <- confusionMatrix(as.factor(svm_predictions), shopping_test$Revenue)
+svm_cm[2]
+svm_cm$overall[2]
+svm_cm$byClass[11]
+```
+
+### KNN Model
+
+For our KNN model, we will also use 10-fold cross-validation to optimize our hyperparameter. Our performance metric will be the Kappa statistic, and we will test k-values between 1 and 25. 
+
+```{r message=FALSE, warning=FALSE}
+trControl <- trainControl(method  = "cv",
+                          number  = 10)
+
+fit <- train(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE,
+             method     = "knn",
+             tuneGrid   = expand.grid(k = 1:25),
+             trControl  = trControl,
+             metric     = "Kappa",
+             data       = shopping_train)
+
+# fit
+
+knn_predictions <- predict(fit, shopping_test)
+knn_cm <- confusionMatrix(as.factor(knn_predictions), shopping_test$Revenue)
+knn_cm[2]
+knn_cm$overall[2]
+knn_cm$byClass[11]
+```
+
+### Decision Tree Model
+
+Finally, we will fit a decision tree model using similar techniques to our two previous models. We will again use 10-fold cross-validation to optimize our Kappa statistic. In this model, we will also add a cost matrix that will penalize false positives with a cost of 1, and false negatives with a cost of 4. The reason for the difference is because in theory it would be worse for a retail website to assume someone is not going to buy something and devote resources elsewhere, when in reality that person is more likely to buy.  
+
+```{r message=FALSE, warning=FALSE}
+library(C50)
+library(partykit)
+index = which(colnames(shopping_train)=="Revenue")
+folds = createFolds(shopping_train$Revenue, 10)
+
+dt_cv1 = lapply(folds, function(x) {
+  training_fold <- shopping_train[-x,]
+  test_fold <- shopping_train[x,]
+  
+  error_cost <- matrix(c(0, 1, 4, 0), nrow = 2)
+  
+  clf <- C5.0(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE,
+              data = training_fold,
+              costs = error_cost)
+  
+  y_pred <- predict(clf, newdata = test_fold[,-index])
+  cm = table(test_fold$Revenue, y_pred)
+  # print(cm)
+  observed_acc <- cm[1,1] + cm[2,2]
+  expected_acc <- ((cm[1,1]+cm[1,2])*(cm[1,1]+cm[2,1]) + ((cm[2,1]+cm[2,2])*(cm[1,2]+cm[2,2])))/(cm[1,1]+cm[1,2]+cm[2,1]+cm[2,2])
+  kappa <- (observed_acc - expected_acc)/(cm[1,1]+cm[1,2]+cm[2,1]+cm[2,2] - expected_acc)
+  balanced_accuracy <- 0.5*(cm[1,1]/(cm[1,1]+cm[1,2]) + cm[2,2]/(cm[2,2]+cm[2,1]))
+  # print(balanced_accuracy)
+  return(kappa)
+})
+dt1_avg_kappa <- mean(as.numeric(dt_cv1))
+# dt1_avg_kappa
+
+decision_tree_model <- C5.0(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE,
+              data = shopping_train,
+              costs = matrix(c(0, 1, 4, 0), nrow = 2))
+
+decision_tree_predictions <- predict(decision_tree_model, shopping_test)
+dt_cm <- confusionMatrix(as.factor(decision_tree_predictions), shopping_test$Revenue)
+dt_cm[2]
+dt_cm$overall[2]
+dt_cm$byClass[11]
+```
+
+### Stacked Model
+
+The goal of our stacked model is to improve on each of our previous three models and how they perform individually. To do this we will take their predictions on the training data as our new training data. We will then fit a decision tree model to their predictions. The benefit of using a decision tree is that unlike other types of models, it does not "average" our features. It splits the data and makes decisions based on those splits. This will be a better way to combine models if we hope to improve on all of them.
+
+```{r message=FALSE, warning=FALSE}
+# ==========================================================
+# Get the various predictions for the train data
+# ==========================================================
+svm_predictions_train <- predict(svmfit, shopping_train)
+knn_predictions_train <- predict(fit, shopping_train)
+decision_tree_predictions_train <- predict(decision_tree_model, shopping_train)
+
+ConvertToTF <- function(myprediction) {
+  result <- as.factor(myprediction)
+  levels(result) <- c("TRUE", "FALSE")
+  result
+}
+
+# Convert each set of prediction to factors
+svm_predictions <- ConvertToTF(svm_predictions)
+knn_predictions <- ConvertToTF(knn_predictions)
+decision_tree_predictions <- ConvertToTF(decision_tree_predictions)
+
+# Create the feature data
+stacked_data <- data.frame(svm_predictions,knn_predictions, decision_tree_predictions)
+
+model_combined_results <- data.frame(svm_predictions_train, knn_predictions_train, decision_tree_predictions_train)
+
+names(model_combined_results) <- names(stacked_data)
+
+# Create the model
+Revenue <- shopping_train$Revenue
+W = ifelse(Revenue == "FALSE",1,5.47)
+stacked_model <- ctree(shopping_train$Revenue ~ . + 1, data = model_combined_results, weights = W)
+plot(stacked_model)
+
+stacked_model_prediction <- predict(stacked_model, stacked_data)
+
+stacked_model_prediction <- ConvertToTF(stacked_model_prediction)
+stacked_cm <- confusionMatrix(as.factor(stacked_model_prediction), shopping_test$Revenue)
+stacked_cm[2]
+stacked_cm$overall[2]
+stacked_cm$byClass[11]
+```
+
+# Conclusion
+
+After making all of our models, we can see that there is a distinct split in the performance. Our SVM and KNN models performed similarly, while our decision tree and stacked models performed better and nearly equivalnet to each other. In that sense, our stacked model did not significantly improve on how each of our models performed individually. We could still simply use our decision tree model and achieve the same results. 
+
+| Model | SVM | KNN | Tree | Stacked |
+|:-----:|:------:|:------:|:------:|:-------:|
+| Kappa | 0.5105 | 0.5199 | 0.5677 | 0.5677 |
+| BAC | 0.7242 | 0.7322 | 0.8412 | 0.8412 |
+
+If we look at the plot of our stacked decision tree model we can gain some insight into its performance. We see that the top node is our decision tree classifier. If that node predicts false, then false is predicted with very high accuracy. When it predicts true however, we send the prediction to the next node, our SVM model. This node then makes the prediction. If our SVM prediction is false, then our stacked model chooses false, but the decision is less certain than in our decision tree case. When the SVM model predicts true, our stacked model predicts true regardless of what the KNN model decides.
+
+It seems then, that the reason our stacked model does not outperform our decision tree model is because of the cost matrix paramter we include. We again use a penalty of 1 for false positives, and 4 for false negatives. What we see happen then is that our false negative penalty causes our model to essentially ignore the prediction our SVM makes. The effect of that is that it eliminates the need of anything more than the decision tree model. The stacked model just uses the decision tree predictions.
+
+
+
+
 
 
 

@@ -44,9 +44,12 @@ shopping[shopping$Month == "Dec",]$MonthN <- 12
 #Comparison of results with respect to time
 
 ```{r}
+library(ggplot2)
 #Not sure if this is valuable from the standpoint of creating a model, but evaluating effect of timeframes on sales conversion
 
-barplot(tapply(shopping$Revenue, shopping$MonthN, mean))
+barplot(tapply(shopping$Revenue, shopping$MonthN, mean), col="#203864", main="Probability of Purchase by Month",
+ ylab="Probability of Purchase", names.arg=c("Feb.", "Mar.", "May", "Jun.", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."))
+
 #Customers significantly more likely to purchase between months of July and November
 
 #^with GGPlot as stacked bar with total count (also not sure if density graph is helpful here):
@@ -54,14 +57,16 @@ MonthDensity <- ggplot(data = shopping, aes(x = MonthN, colour = colrange))
 MonthDensity + geom_bar()
 MonthDensity + geom_density()
 
-barplot(tapply(shopping$Revenue, shopping$Weekend, mean), ylim = c(0,.3))
+barplot(tapply(shopping$Revenue, shopping$Weekend, mean), ylim = c(0,.20), col="#203864", names.arg=c("Weekday", "Weekend"), main="Probability of Purchase on Weekends",
+ ylab="Probability of Purchase")
 #Customers marginally more likely to purchase on weekends
 
 #^with GGPlot as stacked bar with total count:
 WeekendDensity <- ggplot(data = shopping, aes(x = Weekend, colour = colrange))
 WeekendDensity + geom_bar()
 
-barplot(tapply(shopping$Revenue, shopping$SpecialDay, mean))
+barplot(tapply(shopping$Revenue, shopping$SpecialDay, mean), col="#203864", main="Probability of Purchase on \"Special Days\"", ylab= "Probability of Purchase", xlab = "Normalized distance from \"Special Day\" (max 1 week)")
+
 #May have done something wrong here but this seems to suggest a counterintuitive trend towards buying around special days
 
 #^with GGPlot as stacked bar with total count:
@@ -71,6 +76,7 @@ SDDensity + geom_bar()
 ```
 
 #Exploring impact of region on purchase
+
 ```{r}
 barplot(tapply(shopping$Revenue, shopping$Region, mean), ylim = c(0,.2))
 #Region does not seem to be overly significant in impacting sales conversion
@@ -88,7 +94,7 @@ barplot(tapply(shopping$Revenue, shopping$Browser, mean))
 barplot(tapply(shopping$Revenue, shopping$TrafficType, mean))
 #Names are not included in dataframe or attached guide - Significant difference in sales turnover across different types of traffic.
 
-barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25))
+barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25), col="#203864", main="Probability of Purchase by User Type", ylab= "Probability of Purchase", names.arg=c("New Visitor", "Other", "Returning Visitor"))
 #New visitors seem the most likely to purchase, Returning visitors are least likely
 
 ```
@@ -97,6 +103,10 @@ barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25))
 
 ```{r}
 library(ggplot2)
+
+#Using Gabby's Logistic Model to educate which visualizations would be informative
+log_model <- glm(Revenue ~ ., data=shopping, family="binomial")
+summary(log_model)
 
 colrange <- ifelse(shopping$Revenue == 1, "Purchase", "No Purchase")
 
@@ -118,19 +128,30 @@ Inf_vs_Prod + geom_point()
 Inf_vs_Prod_Duration <- ggplot(data = shopping, aes(x = Informational_Duration, y = ProductRelated_Duration, colour = colrange))
 Inf_vs_Prod_Duration + geom_point()
 
-#Testing relationship between Product and Administrative page visits and duration
+#Testing relationship between Administratve and Produce-related page visits and duration
 
-Prod_vs_Admin <- ggplot(data = shopping, aes(x = ProductRelated, y = Administrative, colour = colrange)) + geom_jitter(alpha = 0.5)
-Prod_vs_Admin + geom_point()
+Admin_vs_Prod <- ggplot(data = shopping, aes(x = Administrative, y = ProductRelated, colour = colrange)) + geom_jitter(alpha = 0.5)
+Admin_vs_Prod + geom_point()
 #Added Jitter because there was a lot of overlap
 
-Prod_vs_Admin_Duration <- ggplot(data = shopping, aes(x = ProductRelated_Duration, y = Administrative_Duration, colour = colrange))
-Prod_vs_Admin_Duration + geom_point()
+Admin_vs_Prod_Duration <- ggplot(data = shopping, aes(x = Administrative_Duration, y = ProductRelated_Duration, colour = colrange))
+Admin_vs_Prod_Duration + geom_point()
 
 #Testing relationship between Bounce Rate and Exit Rate
 
 Bounce_vs_Exit <- ggplot(data = shopping, aes(x = BounceRates, y = ExitRates, colour = colrange))
 Bounce_vs_Exit + geom_point()
+
+#Testing relationship between Bounce Rate and Page Value
+
+Bounce_vs_Page <- ggplot(data = shopping, aes(x = BounceRates, y = PageValues, colour = colrange))
+Bounce_vs_Page + geom_point()
+
+#Testing relationship between Page Value and Exit Rate
+
+Page_vs_Exit <- ggplot(data = shopping, aes(x = PageValues, y = ExitRates, colour = colrange))
+Page_vs_Exit + geom_point()
+
 
 ```
 

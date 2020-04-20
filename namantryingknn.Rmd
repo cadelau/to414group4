@@ -41,15 +41,14 @@ shopping$VisitorType <- NULL
 shopping$HolidaySeason <- ifelse(shopping$Month == "Oct" | shopping$Month == "Nov" | shopping$Month == "Dec",1,0)
 shopping$Month <- NULL
 summary(shopping)
-shopping_use <- shopping
+
 
 normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
-
 shopping_n <- as.data.frame(lapply(shopping[-16], normalize)) #started at column 2, because no point in normalizing the binary "outcome"
-shopping_n$Revenue <- shopping$Revenue
-
+shopping_n$Revenue <- as.factor(as.numeric(shopping$Revenue)-1)
+shopping_n$Revenue <- factor(c("0","1"))
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
 shopping_use <- shopping_n[1:8630,]
@@ -59,9 +58,6 @@ shopping_test_DNU <- shopping_n[8631:12330,]
 ```{r}
 shopping_use_train <- shopping_use[1:7000, ] #keep rest rows for train
 shopping_use_test <- shopping_use[7001:nrow(shopping_use), ] #keep 100 rows for test
-
-shopping_use_train_labels <- shopping_use[1:7000, 16]
-shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
 
 trControl <- trainControl(method  = "cv",
                           number  = 5)
@@ -92,7 +88,7 @@ fit
 ```{r}
 shopping_train <- shopping_n[1:8630, ] #keep rest rows for train
 shopping_test <- shopping_n[8631:nrow(shopping_n), ] #keep 100 rows for test
-shopping_train_labels <- shopping[1:8630, 16]
+shopping_train_labels <- shopping_use[1:8630, 16]
 shopping_test_labels <- shopping[8631:nrow(shopping_n), 16]
 
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
