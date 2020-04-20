@@ -47,8 +47,8 @@ normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
 shopping_n <- as.data.frame(lapply(shopping[-16], normalize)) #started at column 2, because no point in normalizing the binary "outcome"
-shopping_n$Revenue <- as.numeric(shopping$Revenue)
-
+shopping_n$Revenue <- as.numeric(shopping$Revenue)-1
+shopping_n$Revenue <- factor(c("0","1"))
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
 shopping_use <- shopping_n[1:8630,]
@@ -58,19 +58,6 @@ shopping_test_DNU <- shopping_n[8631:12330,]
 ```{r}
 shopping_use_train <- shopping_use[1:7000, ] #keep rest rows for train
 shopping_use_test <- shopping_use[7001:nrow(shopping_use), ] #keep 100 rows for test
-
-shopping_use_train_labels <- shopping_use[1:7000, 18]
-shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 18]
-
-
-shopping_use_test_pred <- knn(train = shopping_use_train, test = shopping_use_test,
-                      cl = shopping_use_train_labels, k=1)
-
-CrossTable(x = shopping_use_test_labels, y = shopping_use_test_pred, 
-           prop.chisq=FALSE)
-
-confusionMatrix(shopping_use_test_pred, shopping_use_test_labels, positive = "1")
-
 
 trControl <- trainControl(method  = "cv",
                           number  = 5)
