@@ -63,6 +63,16 @@ shopping_use_test <- shopping_use[7001:nrow(shopping_use), ] #keep 100 rows for 
 shopping_use_train_labels <- shopping_use[1:7000, 16]
 shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
 
+
+shopping_test_pred <- knn(shopping_use_train = shopping_use_train, test = shopping_use_test,
+                      cl = shopping_use_train_labels, k=7)
+
+CrossTable(x = shopping_use_test_labels, y = shopping_use_test_pred, 
+           prop.chisq=FALSE)
+
+confusionMatrix(shopping_use_test_pred, shopping_use_test_labels, positive = "1")
+
+
 trControl <- trainControl(method  = "cv",
                           number  = 5)
 
@@ -92,7 +102,7 @@ fit
 ```{r}
 shopping_train <- shopping_n[1:8630, ] #keep rest rows for train
 shopping_test <- shopping_n[8631:nrow(shopping_n), ] #keep 100 rows for test
-shopping_train_labels <- shopping[1:8630, 16]
+shopping_train_labels <- shopping_use[1:8630, 16]
 shopping_test_labels <- shopping[8631:nrow(shopping_n), 16]
 
 shopping_test_pred <- knn(train = shopping_train, test = shopping_test,
