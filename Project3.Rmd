@@ -261,7 +261,16 @@ If we look at the plot of our stacked decision tree model we can gain some insig
 
 It seems then, that the reason our stacked model does not outperform our decision tree model is because of the cost matrix paramter we include. We again use a penalty of 1 for false positives, and 4 for false negatives. What we see happen then is that our false negative penalty causes our model to essentially ignore the prediction our SVM makes. The effect of that is that it eliminates the need of anything more than the decision tree model. The stacked model just uses the decision tree predictions.
 
+Our model can be applied in a business sense to increase revenues for online retailers. Our models give insights into the types of customers that are more likely to purchase a product when visiting a site. This kind of information can be leveraged in many different ways. A few possibilities are:
 
+1. Increased Ad Spending
+    + Our models tell us who we think is more likely to buy something based on their online shopping behavior, when they are looking to buy, and whether they are returning customers or not. Some of this data we can know beforehand about people, but other variables would need to be gathered from outside sources such as Google analytics. This could allow us to apply our models to shoppers who are not even on the site yet. If the company increased ad spending to target those people, we believe they would see an increase in revenue.
+2. Dynamic Pricing
+    + Because our models utilize data on site activity by customers, we can make real time predictions about whether we think a customer will purchase something. One application of that knowledge would be to dynamically price products based on whether we think someone is likely to buy it. By increasing the price for people likely to buy, and decreasing it for people who are less likely, we would expect increases in revenue.
+3. Connect a Sales Representative
+    + As a person spends more time on the site shopping, we will be able to predict whether we think they are likely to buy something. By targeting these people and presenting them with a sales representative to answer questions they may have, we would likely increase sales. Even just an automated chat bot could prove to be useful by providing customers who are "on the fence" with an immediate person to answer their questions.
+    
+The difficulty of our data is that a great deal of it is collected in the moments before someone decides to buy something or not. This makes it challenging to act on the information in a timely manner. We see the potential actions above as useful ways to apply our model. Combining our model with additional third party, or collecting more data in general could further add to the success and applicability of our model. For now, we are satisfied with our results and the potential ways to apply them.
 
 
 
