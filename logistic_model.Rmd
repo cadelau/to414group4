@@ -99,9 +99,20 @@ best_t_acc = threshold[which.min(test_errors)];best_t_acc
 best_t_kappa = threshold[which.max(kappa)];best_t_kappa
 
 test_errors[which.min(test_errors)]
+test_errors[]
 kappa[which.max(kappa)]
 ```
 
+```{r}
+train_pred <- as.factor(as.numeric(train_predProbs > best_t_kappa))
+test_pred <- as.factor(as.numeric(test_predProbs > best_t_kappa))
+  
+train_err = mean(as.numeric(train_pred) != as.numeric(y_train_subset)); train_err
+test_err = mean(as.numeric(test_pred) != as.numeric(y_val)); test_err
+  
+test_pred <- factor(test_pred, levels=c("0", "1")) # incase all values are 0 or 1
+confusionMatrix(test_pred, y_val)
+```
 
 
 Split test and train
@@ -115,7 +126,7 @@ Split train further into validation and train so that the validation can be used
 
 ```{r}
 lasso.mod = glmnet(matrix_train, y_train_subset, alpha=1, family="binomial")
-cv.mod = cv.glmnet(matrix_train, y_train_subset, alpha=1, family="binomial")
+cv.mod = cv.glmnet(matrix_train, y_train_subset, alpha=1, family="binomial", type.measure = "class")
 
 bestlam = cv.mod$lambda.min
 
@@ -182,3 +193,4 @@ best_t_kappa = threshold[which.max(kappa)];best_t_kappa
 test_errors[which.min(test_errors)]
 kappa[which.max(kappa)]
 ```
+
