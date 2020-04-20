@@ -1,28 +1,108 @@
 ---
 title: "Project3"
 author: "Naman Gupta"
-date: "3/31/2020"
-output: html_document
+date: "Monday, April 20, 2020"
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Introduction
+
+Online shopping has grown significatly in the last decade. Massive online sites like Amazon and Walmart are the go-to shopping place now rather than brick and mortar stores for some people. With coronavirus precautions still in effect, people are now unable to even go to physical store locations, driving the need for online shopping even higher. 
+
+Our data deals with customer data when they are on a store's website. The variable of interest is called Revenue, and identifies whether a customer actually bought something while on the site. Not surprisingly, online retail sites have very low rates of people making purchases. With how easy it is to simply get online and browse, we see this as the equivalent of most people "window shopping" online. That is, they are merely there to look, not necessarily buy.
+
+We think that by using machine learning we can identify what factors result in customers actually buying products online. The insights to be drawn could be extremely valuable to the online retail company by improving buy-rates. Further analyses of insights will be given later.
+
+# Data Exploration and Preprocessing
+
+As previously mentioned, the data comes from online shopping sessions, and whether a customer actually bought something during their time on the site. The data has over 12,000 observations and 18 variables. There are columns describing what types of pages the customer visits(administrative, informational, product related), as well as how long they stay on each of those pages. There is information on the customer such as what browser and operating system they are using, and whether or not they are a returning customer. Not all of the data will be necessary, and some of it must be processed further before being useful. We will detail those changes in this section. 
 
 ```{r}
 # Set the same seed
 set.seed(123)
-df <- read.csv("online_shoppers_intention.csv")
+shopping <- read.csv("online_shoppers_intention.csv")
 
-rows <- sample(nrow(shopping))
-shopping <- df[rows,]
+shopping$Month <- NULL
+shopping$OperatingSystems <- NULL
+shopping$Browser <- NULL
+#shopping$Region <- as.factor(shopping$Region)
+shopping$Region <- NULL
+shopping$TrafficType <- NULL
+shopping$Weekend <- as.factor(shopping$Weekend)
+shopping$Revenue <- as.factor(shopping$Revenue)
+```
+
+* Altered columns:
+    + **Month**: Removed for now. Could change to a "holiday vs. non holiday" season variable.
+    + **Operating System**: Removed. Should not affect whether someone buys or not.
+    + **Browser**: Removed for same reason as operating system.
+    + **Region**: Removed. Not interested in regional analysis for now.
+    + **Traffic Type**: Removed. Unclear what different values in this column represent.
+    + **Weekend**: Changed to factor.
+    + **Revenue**: Changed to factor.
+
+```{r}
+# Normalize data
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+data_to_norm <- shopping[,1:10]
+str(shopping)
+shop_norm <- as.data.frame(lapply(data_to_norm, normalize))
+#shop_norm$Region <- shopping$Region
+shop_norm$VisitorType <- shopping$VisitorType
+shop_norm$Weekend <- shopping$Weekend
+shop_norm$Revenue <- shopping$Revenue
+
+
+# Expand factors into dummy variables
+y <- shop_norm$Revenue
+shop_norm$Revenue <- NULL
+X = as.data.frame(model.matrix( ~ .^2 - 1, shop_norm))
+X$Revenue <- as.factor(y)
+```
+
+* Split data into train and test.
+* Logistic model on train data
+
+```{r}
+rows <- sample(nrow(X))
+shop <- X[rows,]
 
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
-shopping_train <- shopping[1:8630,]
-shopping_test <- shopping[8631:12330,]
+shopping_train <- shop[1:8630,]
+shopping_test <- shop[8631:12330,]
+
+# Logistic Model
+log_model <- glm(Revenue ~ ., data=shopping_train, family="binomial")
+summary(log_model)
 ```
+
+# Models
+
+### SVM Model
+
+```{r}
+library(kernlab)
+library(e1071)
+```
+
+### kNN Model
+
+### Decision Tree Model
+
+### Stacked Model
+
+# Conclusion
+
+
 
 
 
