@@ -46,9 +46,8 @@ summary(shopping)
 normalize <- function(x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
-
 shopping_n <- as.data.frame(lapply(shopping[-16], normalize)) #started at column 2, because no point in normalizing the binary "outcome"
-shopping_n$Revenue <- as.numeric(shopping$Revenue) - 1
+shopping_n$Revenue <- as.numeric(shopping$Revenue)
 
 # This is roughly a 70/30 train/test split
 # Only use the train data to tune and improve models right now
