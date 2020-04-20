@@ -24,6 +24,7 @@ We think that by using machine learning we can identify what factors result in c
 As previously mentioned, the data comes from online shopping sessions, and whether a customer actually bought something during their time on the site. The data has over 12,000 observations and 18 variables. There are columns describing what types of pages the customer visits(administrative, informational, product related), as well as how long they stay on each of those pages. There is information on the customer such as what browser and operating system they are using, and whether or not they are a returning customer. Not all of the data will be necessary, and some of it must be processed further before being useful. We will detail those changes in this section. 
 
 ```{r}
+library(caret)
 # Set the same seed
 set.seed(123)
 shopping <- read.csv("online_shoppers_intention.csv")
@@ -82,7 +83,7 @@ shopping_test <- shop[8631:12330,]
 
 # Logistic Model
 log_model <- glm(Revenue ~ ., data=shopping_train, family="binomial")
-summary(log_model)
+# summary(log_model)
 
 f = "Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE"
 ```
@@ -96,11 +97,12 @@ library(kernlab)
 library(e1071)
 
 tuned = tune.svm(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE, data = shopping_train, class.weights=c("FALSE"=0.44, "TRUE"=1), tunecontrol=tune.control(cross=10))
-summary(tuned)
+# summary(tuned)
 svmfit = tuned$best.model
 # table(data_test[,c("Revenue")], predict(svmfit, data_test, type = "response"))
 
 svm_predictions <- predict(svmfit, shopping_test)
+confusionMatrix(as.factor(svm_predictions), shopping_test$Revenue)
 ```
 
 ### kNN Model
@@ -116,14 +118,17 @@ fit <- train(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Admi
              metric     = "Kappa",
              data       = shopping_train)
 
-fit
+# fit
 
 knn_predictions <- predict(fit, shopping_test)
+confusionMatrix(as.factor(knn_predictions), shopping_test$Revenue)
 ```
 
 ### Decision Tree Model
 
 ```{r}
+library(C50)
+library(partykit)
 index = which(colnames(shopping_train)=="Revenue")
 folds = createFolds(shopping_train$Revenue, 10)
 
@@ -139,22 +144,23 @@ dt_cv1 = lapply(folds, function(x) {
   
   y_pred <- predict(clf, newdata = test_fold[,-index])
   cm = table(test_fold$Revenue, y_pred)
-  print(cm)
+  # print(cm)
   observed_acc <- cm[1,1] + cm[2,2]
   expected_acc <- ((cm[1,1]+cm[1,2])*(cm[1,1]+cm[2,1]) + ((cm[2,1]+cm[2,2])*(cm[1,2]+cm[2,2])))/(cm[1,1]+cm[1,2]+cm[2,1]+cm[2,2])
   kappa <- (observed_acc - expected_acc)/(cm[1,1]+cm[1,2]+cm[2,1]+cm[2,2] - expected_acc)
   balanced_accuracy <- 0.5*(cm[1,1]/(cm[1,1]+cm[1,2]) + cm[2,2]/(cm[2,2]+cm[2,1]))
-  print(balanced_accuracy)
+  # print(balanced_accuracy)
   return(kappa)
 })
-dt1_bac <- mean(as.numeric(dt_cv1))
-dt1_bac
+dt1_avg_kappa <- mean(as.numeric(dt_cv1))
+dt1_avg_kappa
 
 decision_tree_model <- C5.0(Revenue ~ ProductRelated_Duration + PageValues + WeekendTRUE + Administrative:PageValues + Informational:PageValues + Informational:VisitorTypeReturning_Visitor + Informational_Duration:SpecialDay + ProductRelated:ProductRelated_Duration + ProductRelated:PageValues + BounceRates:PageValues + ExitRates:PageValues + ExitRates:VisitorTypeReturning_Visitor + PageValues:SpecialDay + PageValues:WeekendTRUE + VisitorTypeReturning_Visitor:WeekendTRUE,
               data = shopping_train,
               costs = matrix(c(0, 1, 4, 0), nrow = 2))
 
 decision_tree_predictions <- predict(decision_tree_model, shopping_test)
+confusionMatrix(as.factor(decision_tree_predictions), shopping_test$Revenue)
 ```
 
 ### Stacked Model
@@ -174,9 +180,9 @@ ConvertToTF <- function(myprediction) {
 }
 
 # Convert each set of prediction to factors
-ConvertToTF(svm_predictions)
-ConvertToTF(knn_predictions)
-ConvertToTF(decision_tree_predictions)
+svm_predictions <- ConvertToTF(svm_predictions)
+knn_predictions <- ConvertToTF(knn_predictions)
+decision_tree_predictions <- ConvertToTF(decision_tree_predictions)
 
 # Create the feature data
 stacked_data <- data.frame(svm_predictions,knn_predictions, decision_tree_predictions)
