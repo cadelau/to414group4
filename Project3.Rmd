@@ -1,6 +1,6 @@
 ---
 title: "Project3"
-author: "Naman Gupta"
+author: "Naman Gupta, Vin Kannan, Gabrielle Bracken, Sam Bugaieski, Cade Lau"
 date: "Monday, April 20, 2020"
 output: 
   html_document:
@@ -23,7 +23,7 @@ We think that by using machine learning we can identify what factors result in c
 
 As previously mentioned, the data comes from online shopping sessions, and whether a customer actually bought something during their time on the site. The data has over 12,000 observations and 18 variables. There are columns describing what types of pages the customer visits(administrative, informational, product related), as well as how long they stay on each of those pages. There is information on the customer such as what browser and operating system they are using, and whether or not they are a returning customer. Not all of the data will be necessary, and some of it must be processed further before being useful. We will detail those changes in this section. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(caret)
 # Set the same seed
 set.seed(123)
@@ -48,7 +48,7 @@ shopping$Revenue <- as.factor(shopping$Revenue)
     + **Weekend**: Changed to factor.
     + **Revenue**: Changed to factor.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # Normalize data
 normalize <- function(x) {
   return((x - min(x)) / (max(x) - min(x)))
@@ -72,7 +72,7 @@ X$Revenue <- as.factor(y)
 * Split data into train and test.
 * Logistic model on train data
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 rows <- sample(nrow(X))
 shop <- X[rows,]
 
@@ -107,7 +107,7 @@ confusionMatrix(as.factor(svm_predictions), shopping_test$Revenue)
 
 ### kNN Model
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 trControl <- trainControl(method  = "cv",
                           number  = 10)
 
@@ -126,7 +126,7 @@ confusionMatrix(as.factor(knn_predictions), shopping_test$Revenue)
 
 ### Decision Tree Model
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(C50)
 library(partykit)
 index = which(colnames(shopping_train)=="Revenue")
@@ -165,7 +165,7 @@ confusionMatrix(as.factor(decision_tree_predictions), shopping_test$Revenue)
 
 ### Stacked Model
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # ==========================================================
 # Get the various predictions for the train data
 # ==========================================================
@@ -193,7 +193,7 @@ names(model_combined_results) <- names(stacked_data)
 
 # Create the model
 stacked_model <- ctree(shopping_train$Revenue ~ . + 1, data = model_combined_results)
-plot(stacked_model)
+plot(stacked_model, )
 
 stacked_model_prediction <- predict(stacked_model, stacked_data, type = "response")
 
