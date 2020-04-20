@@ -94,7 +94,7 @@ barplot(tapply(shopping$Revenue, shopping$Browser, mean))
 barplot(tapply(shopping$Revenue, shopping$TrafficType, mean))
 #Names are not included in dataframe or attached guide - Significant difference in sales turnover across different types of traffic.
 
-barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25))
+barplot(tapply(shopping$Revenue, shopping$VisitorType, mean), ylim = c(0,.25), col="#203864", main="Probability of Purchase by User Type", ylab= "Probability of Purchase", names.arg=c("New Visitor", "Other", "Returning Visitor"))
 #New visitors seem the most likely to purchase, Returning visitors are least likely
 
 ```
