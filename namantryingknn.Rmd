@@ -64,7 +64,7 @@ shopping_use_train_labels <- shopping_use[1:7000, 16]
 shopping_use_test_labels <- shopping_use[7001:nrow(shopping_use), 16]
 
 
-shopping_test_pred <- knn(shopping_use_train = shopping_use_train, test = shopping_use_test,
+shopping_test_pred <- knn(train = shopping_use_train, test = shopping_use_test,
                       cl = shopping_use_train_labels, k=7)
 
 CrossTable(x = shopping_use_test_labels, y = shopping_use_test_pred, 
